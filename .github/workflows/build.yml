@@ -23,6 +23,11 @@ jobs:
           mkdir -p ssiv-src
           rm -rf ssiv-src/ssiv
           mv subsampling-scale-image-view-* ssiv-src/ssiv
+      - name: Patch broken source code
+        run: |
+          # Fix the compilation error in KunManga.kt (headers overrides nothing)
+          # We remove the 'override' keyword so it compiles as a local property
+          sed -i 's/override val headers/val headers/g' parsers-src/kotatsu-parsers/src/main/kotlin/org/koitharu/kotatsu/parsers/site/madara/en/KunManga.kt
       - name: Align SDK and AGP Versions
         run: |
           # Force AGP 8.7.3 everywhere
