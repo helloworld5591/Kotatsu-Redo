@@ -18,7 +18,7 @@ pluginManagement {
 	}
 }
 dependencyResolutionManagement {
-	repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+	repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
 	repositories {
 		google()
 		mavenCentral()
@@ -30,3 +30,14 @@ dependencyResolutionManagement {
 
 include ':app'
 rootProject.name = "Kotatsu"
+
+includeBuild('parsers-src/kotatsu-parsers') {
+    dependencySubstitution {
+        substitute module('com.github.helloworld5591:kotatsu-parsers-redo') using project(':')
+    }
+}
+includeBuild('ssiv-src/ssiv') {
+    dependencySubstitution {
+        substitute module('com.github.KotatsuApp:subsampling-scale-image-view') using project(':library')
+    }
+}
