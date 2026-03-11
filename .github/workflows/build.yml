@@ -9,11 +9,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Patch build files
-        run: |
-          sed -i 's/compileSdk = 36/compileSdk = 35/g' app/build.gradle
-          sed -i 's/targetSdk = 36/targetSdk = 35/g' app/build.gradle
-          sed -i 's/gradle = "8.13.0"/gradle = "8.7.3"/g' gradle/libs.versions.toml
       - name: Download parsers source
         run: |
           curl -L "https://github.com/helloworld5591/kotatsu-parsers-redo/archive/master.zip" -o parsers.zip
@@ -28,10 +23,19 @@ jobs:
           mkdir -p ssiv-src
           rm -rf ssiv-src/ssiv
           mv subsampling-scale-image-view-* ssiv-src/ssiv
-          sed -i 's/compileSdk = [0-9]*/compileSdk = 35/g' ssiv-src/ssiv/library/build.gradle
+      - name: Align SDK and AGP Versions
+        run: |
+          # Force AGP 8.7.3 everywhere to prevent conflicts
+          sed -i 's/gradle = "8.13.0"/gradle = "8.7.3"/g' gradle/libs.versions.toml
+          find parsers-src ssiv-src -name "libs.versions.toml" -exec sed -i 's/agp = .*/agp = "8.7.3"/g' {} +
+          find parsers-src ssiv-src -name "libs.versions.toml" -exec sed -i 's/androidGradlePlugin = .*/androidGradlePlugin = "8.7.3"/g' {} +
+          find parsers-src ssiv-src -name "build.gradle*" -exec sed -i 's/com.android.tools.build:gradle:[^"]*/com.android.tools.build:gradle:8.7.3/g' {} +
+          
+          # Force Compile/Target SDK 35 everywhere
+          find . -name "build.gradle*" -exec sed -i 's/compileSdk = 36/compileSdk = 35/g' {} +
+          find . -name "build.gradle*" -exec sed -i 's/targetSdk = 36/targetSdk = 35/g' {} +
       - name: Patch settings.gradle
         run: |
-          # Append the composite build logic only during the CI run
           printf "\nincludeBuild('parsers-src/kotatsu-parsers') {\n    dependencySubstitution {\n        substitute module('com.github.helloworld5591:kotatsu-parsers-redo') using project(':')\n    }\n}\n" >> settings.gradle
           printf "includeBuild('ssiv-src/ssiv') {\n    dependencySubstitution {\n        substitute module('com.github.KotatsuApp:subsampling-scale-image-view') using project(':library')\n    }\n}\n" >> settings.gradle
       - name: Build APK
