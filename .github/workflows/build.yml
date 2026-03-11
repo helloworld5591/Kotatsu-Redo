@@ -11,34 +11,33 @@ jobs:
           distribution: 'temurin'
       - name: Patch build files
         run: |
-          # Fix SDK and AGP versions in case they aren't fixed in the repo
           sed -i 's/compileSdk = 36/compileSdk = 35/g' app/build.gradle
           sed -i 's/targetSdk = 36/targetSdk = 35/g' app/build.gradle
           sed -i 's/gradle = "8.13.0"/gradle = "8.7.3"/g' gradle/libs.versions.toml
-          
-          # Allow composite builds to resolve their own dependencies
-          sed -i 's/RepositoriesMode.FAIL_ON_PROJECT_REPOS/RepositoriesMode.PREFER_SETTINGS/g' settings.gradle
       - name: Download parsers source
         run: |
           curl -L "https://github.com/helloworld5591/kotatsu-parsers-redo/archive/master.zip" -o parsers.zip
           unzip -q parsers.zip
           mkdir -p parsers-src
+          rm -rf parsers-src/kotatsu-parsers
           mv kotatsu-parsers-redo-master parsers-src/kotatsu-parsers
       - name: Download SSIV source
         run: |
           curl -L "https://github.com/KotatsuApp/subsampling-scale-image-view/archive/376930523c.zip" -o ssiv.zip
           unzip -q ssiv.zip
           mkdir -p ssiv-src
+          rm -rf ssiv-src/ssiv
           mv subsampling-scale-image-view-* ssiv-src/ssiv
           sed -i 's/compileSdk = [0-9]*/compileSdk = 35/g' ssiv-src/ssiv/library/build.gradle
-      - name: Patch settings.gradle with composite builds
+      - name: Patch settings.gradle
         run: |
+          # Append the composite build logic only during the CI run
           printf "\nincludeBuild('parsers-src/kotatsu-parsers') {\n    dependencySubstitution {\n        substitute module('com.github.helloworld5591:kotatsu-parsers-redo') using project(':')\n    }\n}\n" >> settings.gradle
           printf "includeBuild('ssiv-src/ssiv') {\n    dependencySubstitution {\n        substitute module('com.github.KotatsuApp:subsampling-scale-image-view') using project(':library')\n    }\n}\n" >> settings.gradle
       - name: Build APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --max-workers=2 --stacktrace
+          ./gradlew assembleDebug --max-workers=2
       - uses: actions/upload-artifact@v4
         with:
           name: debug-apk
