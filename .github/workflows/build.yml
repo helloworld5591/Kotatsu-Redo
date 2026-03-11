@@ -9,6 +9,10 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: Patch build files
+        run: |
+          sed -i '/WorkInspector/d' app/build.gradle
+          sed -i '/KizzyRPC/d' app/build.gradle
       - name: Download parsers source
         run: |
           curl -L "https://github.com/helloworld5591/kotatsu-parsers-redo/archive/master.zip" -o parsers.zip
@@ -20,10 +24,6 @@ jobs:
           unzip ssiv.zip && mkdir -p ssiv-src
           mv subsampling-scale-image-view-* ssiv-src/ssiv
           sed -i 's/compileSdk = 34/compileSdk = 36/' ssiv-src/ssiv/library/build.gradle
-      - name: Disable JitPack deps
-        run: |
-          sed -i "/WorkInspector/d" app/build.gradle
-          sed -i "/KizzyRPC/d" app/build.gradle
       - name: Build APK
         run: ./gradlew assembleDebug --max-workers=2
       - uses: actions/upload-artifact@v4
