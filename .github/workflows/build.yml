@@ -11,38 +11,40 @@ jobs:
           distribution: 'temurin'
       - name: Patch build files
         run: |
-          sed -i '/WorkInspector/d' app/build.gradle
-          sed -i '/KizzyRPC/d' app/build.gradle
-          # Revert to API 35 as API 36 may not be supported by the runner or AGP yet
-          sed -i 's/compileSdk = 36/compileSdk = 35/' app/build.gradle
-          sed -i 's/targetSdk = 36/targetSdk = 35/' app/build.gradle
+          # Remove problematic dependencies (case-insensitive)
+          sed -i '/workinspector/Id' app/build.gradle
+          sed -i '/kizzyrpc/Id' app/build.gradle
+          # Revert to supported API levels
+          sed -i 's/compileSdk = 36/compileSdk = 35/g' app/build.gradle
+          sed -i 's/targetSdk = 36/targetSdk = 35/g' app/build.gradle
           # Fix the invalid AGP version in libs.versions.toml
-          sed -i 's/gradle = "8.13.0"/gradle = "8.7.3"/' gradle/libs.versions.toml
+          sed -i 's/gradle = "8.13.0"/gradle = "8.7.3"/g' gradle/libs.versions.toml
       - name: Download parsers source
         run: |
           curl -L "https://github.com/helloworld5591/kotatsu-parsers-redo/archive/master.zip" -o parsers.zip
-          unzip parsers.zip && mkdir -p parsers-src
+          unzip parsers.zip
+          mkdir -p parsers-src
           mv kotatsu-parsers-redo-master parsers-src/kotatsu-parsers
       - name: Download SSIV source
         run: |
           curl -L "https://github.com/KotatsuApp/subsampling-scale-image-view/archive/376930523c.zip" -o ssiv.zip
-          unzip ssiv.zip && mkdir -p ssiv-src
+          unzip ssiv.zip
+          mkdir -p ssiv-src
           mv subsampling-scale-image-view-* ssiv-src/ssiv
-          sed -i 's/compileSdk = [0-9]*/compileSdk = 35/' ssiv-src/ssiv/library/build.gradle
+          sed -i 's/compileSdk = [0-9]*/compileSdk = 35/g' ssiv-src/ssiv/library/build.gradle
       - name: Patch settings.gradle with composite builds
         run: |
-          cat >> settings.gradle << 'SETTINGS'
-          includeBuild('parsers-src/kotatsu-parsers') {
-              dependencySubstitution {
-                  substitute module('com.github.helloworld5591:kotatsu-parsers-redo') using project(':')
-              }
-          }
-          includeBuild('ssiv-src/ssiv') {
-              dependencySubstitution {
-                  substitute module('com.github.KotatsuApp:subsampling-scale-image-view') using project(':library')
-              }
-          }
-          SETTINGS
+          # Appending composite build configuration safely
+          echo "includeBuild('parsers-src/kotatsu-parsers') {" >> settings.gradle
+          echo "    dependencySubstitution {" >> settings.gradle
+          echo "        substitute module('com.github.helloworld5591:kotatsu-parsers-redo') using project(':')" >> settings.gradle
+          echo "    }" >> settings.gradle
+          echo "}" >> settings.gradle
+          echo "includeBuild('ssiv-src/ssiv') {" >> settings.gradle
+          echo "    dependencySubstitution {" >> settings.gradle
+          echo "        substitute module('com.github.KotatsuApp:subsampling-scale-image-view') using project(':library')" >> settings.gradle
+          echo "    }" >> settings.gradle
+          echo "}" >> settings.gradle
       - name: Build APK
         run: ./gradlew assembleDebug --max-workers=2
       - uses: actions/upload-artifact@v4
