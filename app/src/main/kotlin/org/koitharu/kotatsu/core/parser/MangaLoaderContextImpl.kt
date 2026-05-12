@@ -80,6 +80,14 @@ class MangaLoaderContextImpl @Inject constructor(
         url: String,
     ): Nothing = throw InteractiveActionRequiredException(parser.source, url)
 
+    override fun getWebViewCookies(url: String): String? {
+        return try {
+            android.webkit.CookieManager.getInstance().getCookie(url)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     override fun redrawImageResponse(response: Response, redraw: (image: Bitmap) -> Bitmap): Response {
         return response.map { body ->
             BitmapDecoderCompat.decode(body.byteStream(), body.contentType()?.toMimeType(), isMutable = true)
@@ -190,13 +198,6 @@ class MangaLoaderContextImpl @Inject constructor(
         timeout: Long
     ): List<String> {
         return webViewRequestInterceptorExecutor.captureWebViewUrls(pageUrl, urlPattern, timeout)
-    }
-
-    override suspend fun extractVrfToken(
-        pageUrl: String,
-        timeout: Long
-    ): String? {
-        return webViewRequestInterceptorExecutor.extractVrfToken(pageUrl, timeout)
     }
 
     private fun obtainWebViewUserAgent(): String {
